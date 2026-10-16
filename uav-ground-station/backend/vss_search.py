@@ -48,6 +48,25 @@ VSS_DATASTORE_URL = os.environ.get("VSS_DATASTORE_URL", "http://host.docker.inte
 VSS_DATASTORE_BUCKET = os.environ.get("VSS_DATASTORE_BUCKET", "video-summary")
 VSS_SEARCH_TIMEOUT_SECONDS = float(os.environ.get("VSS_SEARCH_TIMEOUT_SECONDS", "60"))
 
+# --- Relevance filtering / display scoring --------------------------------
+#   1. Keep only hits within VSS_SEARCH_RELATIVE_CUTOFF of the *top* score
+#      in this result set (relative, not absolute, since the useful score
+#      range shifts per query/model) -- drops the long tail of unrelated
+#      clips that merely scored "not zero".
+#   2. If even the top score is below VSS_SEARCH_MIN_ABS_SCORE, treat the
+#      whole query as having no confident match (empty results) rather than
+#      surfacing a best-of-the-worst hit.
+#   3. Re-express the surviving scores as a relative 0-100 "relevance"
+#      number scaled across the kept hits (worst kept -> ~50, best -> ~99)
+#      instead of multiplying the raw cosine score by 100, so the UI shows a
+#      meaningful ranking signal instead of a bogus absolute percentage.
+# All three are tunable via env since the right cutoffs depend on the
+# embedding model VSS was deployed with.
+VSS_SEARCH_RELATIVE_CUTOFF = float(os.environ.get("VSS_SEARCH_RELATIVE_CUTOFF", "0.90"))
+VSS_SEARCH_MIN_ABS_SCORE = float(os.environ.get("VSS_SEARCH_MIN_ABS_SCORE", "0.0"))
+VSS_SEARCH_DISPLAY_SCORE_FLOOR = 50
+VSS_SEARCH_DISPLAY_SCORE_CEIL = 99
+
 SAFE_SEGMENT = re.compile(r"^[A-Za-z0-9._-]+$")
 MAX_QUERY_LENGTH = 500
 TIME_UNITS = ("minutes", "hours", "days", "weeks")
@@ -269,7 +288,14 @@ async def search(req: SearchRequest):
             "video_proxy_url": f"/api/search-video?path={quote(object_path, safe='/')}" if object_path else None,
             "thumbnail_url": f"/api/search-frame?{urlencode(frame)}" if frame else None,
         })
-    return {"query": query, "results": results}
+
+    results, raw_count = _filter_and_score(results)
+    return {
+        "query": query,
+        "results": results,
+        "total_matches": raw_count,
+        "filtered_out": raw_count - len(results),
+    }
 
 
 @router.get("/api/search-video")
@@ -343,6 +369,45 @@ async def search_frame(
         media_type=resp.headers["content-type"],
         headers={"Cache-Control": "private, max-age=3600"},
     )
+
+
+def _filter_and_score(results: list) -> tuple:
+    """Apply the relative-cutoff filter and relative display scoring
+    described above. Returns (kept_results, raw_count).
+
+    Never drops every hit silently when they're un-scored (score is None for
+    some VSS deployments/queries) -- filtering only kicks in when scores are
+    present, so this stays a strict improvement over "show everything".
+    """
+    raw_count = len(results)
+    scored = [r for r in results if r.get("score") is not None]
+    if not scored:
+        return results, raw_count
+
+    top_score = max(r["score"] for r in scored)
+    if top_score < VSS_SEARCH_MIN_ABS_SCORE:
+        return [], raw_count
+
+    threshold = top_score * VSS_SEARCH_RELATIVE_CUTOFF
+    kept = [r for r in results if r.get("score") is None or r["score"] >= threshold]
+    kept.sort(key=lambda r: (r.get("score") is not None, r.get("score")), reverse=True)
+
+    kept_scores = [r["score"] for r in kept if r.get("score") is not None]
+    if kept_scores:
+        lo, hi = min(kept_scores), max(kept_scores)
+        span = hi - lo
+        for r in kept:
+            if r.get("score") is None:
+                continue
+            if span <= 1e-9:
+                r["display_score"] = VSS_SEARCH_DISPLAY_SCORE_CEIL
+            else:
+                frac = (r["score"] - lo) / span
+                r["display_score"] = round(
+                    VSS_SEARCH_DISPLAY_SCORE_FLOOR
+                    + frac * (VSS_SEARCH_DISPLAY_SCORE_CEIL - VSS_SEARCH_DISPLAY_SCORE_FLOOR)
+                )
+    return kept, raw_count
 
 
 def _upstream_message(resp: httpx.Response) -> str:

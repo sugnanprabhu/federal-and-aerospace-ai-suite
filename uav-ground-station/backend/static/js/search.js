@@ -22,6 +22,7 @@
   let inFlight = null;
   let lastFocus = null;
   let results = [];
+  let filteredOutCount = 0;
   let filter = "all";
   let selectedIndex = -1;
   let playerEl = null;
@@ -89,7 +90,14 @@
     return `at ${formatTime(r.seek_timestamp ?? r.segment_start)}`;
   }
 
+  // Backend already applies a relative-cutoff filter and re-scores the
+  // surviving hits as a 0-100 "relevance" number scaled across this result
+  // set (see vss_search.py's _filter_and_score) -- not the raw cosine
+  // similarity, which runs ~0.2-0.4 even for strong matches and so is
+  // meaningless rendered directly as a percentage. Fall back to the raw
+  // score only for older backends that haven't computed display_score.
   function scorePct(r) {
+    if (r.display_score != null) return Math.round(r.display_score);
     return r.score == null ? null : Math.round(Math.max(0, Math.min(1, r.score)) * 100);
   }
 
@@ -308,6 +316,8 @@
   function renderFilterBar(counts) {
     const bar = el("div", "results-toolbar");
     bar.appendChild(el("span", "results-count", `${results.length} result${results.length === 1 ? "" : "s"}`));
+    // Low-confidence matches are filtered intentionally; so the
+    //  hidden count doesn't read as "missing"/broken results
     if (counts.live && counts.upload) {
       const seg = el("div", "segmented");
       [["all", `All ${results.length}`], ["upload", `Uploads ${counts.upload}`], ["live", `Live ${counts.live}`]].forEach(([key, label]) => {
@@ -401,9 +411,12 @@
         return;
       }
       results = (data && data.results) || [];
+      filteredOutCount = (data && data.filtered_out) || 0;
       if (!results.length) {
-        renderMessage("empty", `No matches for “${query}”`,
-          "Try a different description, or make sure videos have been uploaded and indexed in VSS.", true);
+        const detail = filteredOutCount > 0
+          ? "VSS returned some hits, but none were confident enough to show — try a more specific description."
+          : "Try a different description, or make sure videos have been uploaded and indexed in VSS.";
+        renderMessage("empty", `No matches for “${query}”`, detail, true);
         return;
       }
       renderResults();
