@@ -1,0 +1,7 @@
+{
+  "name": "uav-ground-station-tests",
+  "private": true,
+  "description": "Dashboard tests (jsdom). Python tests are run with tests/run_backend_tests.sh.",
+  "scripts": { "test": "node dashboard_cards.test.js" },
+  "devDependencies": { "jsdom": "^24.0.0" }
+}
