@@ -15,7 +15,6 @@ image handles the single-camera (baylands_detection) and multi-camera
 (baylands_multicam) setups.
 """
 
-import base64
 import json
 import os
 import subprocess
@@ -79,7 +78,6 @@ JPEG_QUALITY  = int(os.getenv("JPEG_QUALITY", "80"))
 MQTT_MAX_FPS  = float(os.getenv("MQTT_MAX_FPS", "0"))
 
 # ── Shared state ──────────────────────────────────────────────────────────────
-_decoder      = json.JSONDecoder()
 _armed        = {"value": False}
 
 
@@ -109,26 +107,6 @@ def wait_for_gz_topics(timeout: int = 180) -> bool:
         time.sleep(3)
     log.error("No camera topics appeared after %ds", timeout)
     return False
-
-
-def decode_frame(msg: dict) -> Optional[np.ndarray]:
-    """Decode a Gazebo JSON image message to an OpenCV BGR ndarray."""
-    w, h = msg.get("width", 0), msg.get("height", 0)
-    raw_str = msg.get("data", "")
-    if not w or not h or not raw_str:
-        return None
-    try:
-        raw = base64.b64decode(raw_str)
-    except Exception:
-        raw = raw_str.encode("latin-1")
-
-    if len(raw) == w * h * 4:
-        arr = np.frombuffer(raw, np.uint8).reshape((h, w, 4))
-        return cv2.cvtColor(arr, cv2.COLOR_RGBA2BGR)
-    if len(raw) == w * h * 3:
-        arr = np.frombuffer(raw, np.uint8).reshape((h, w, 3))
-        return cv2.cvtColor(arr, cv2.COLOR_RGB2BGR)
-    return None
 
 
 # ── MQTT helpers ──────────────────────────────────────────────────────────────
@@ -165,7 +143,11 @@ def make_mqtt_client() -> mqtt.Client:
 # ── Per-camera GZ reader ──────────────────────────────────────────────────────
 
 class GzReader:
-    """Reads the latest frame from a Gazebo topic subprocess in its own thread."""
+    """Keeps the latest frame of a Gazebo camera topic, received in-process.
+
+    Subscribes with the gz-transport Python bindings instead of parsing
+    `gz topic --json-output`, which cannot keep up with 1080p @ 30 fps.
+    """
 
     def __init__(self, cam_id: str):
         self.cam_id  = cam_id
@@ -173,62 +155,36 @@ class GzReader:
         self._latest: Optional[np.ndarray] = None
         self._seq    = 0
         self._lock   = threading.Lock()
-        self._stop   = threading.Event()
+        self._node   = None
 
     def start(self):
-        t = threading.Thread(target=self._run, daemon=True, name=f"gz-{self.cam_id}")
-        t.start()
+        from gz.transport13 import Node
+        from gz.msgs10.image_pb2 import Image
+
+        self._node = Node()
+        if not self._node.subscribe(Image, self._topic, self._on_image):
+            log.error("[%s] Failed to subscribe to %s", self.cam_id, self._topic)
+        else:
+            log.info("[%s] Subscribed to %s", self.cam_id, self._topic)
 
     def latest(self) -> tuple[Optional[np.ndarray], int]:
         with self._lock:
             return self._latest, self._seq
 
     def stop(self):
-        self._stop.set()
+        self._node = None
 
-    def _run(self):
-        while not self._stop.is_set():
-            log.info("[%s] Starting gz stream: %s", self.cam_id, self._topic)
-            try:
-                proc = subprocess.Popen(
-                    ["gz", "topic", "-e", "-t", self._topic, "--json-output"],
-                    stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, bufsize=0,
-                )
-                self._read_loop(proc)
-                proc.kill()
-                proc.wait()
-            except Exception as e:
-                log.error("[%s] gz stream error: %s", self.cam_id, e)
-            if not self._stop.is_set():
-                log.warning("[%s] Stream ended — restarting in 3s", self.cam_id)
-                time.sleep(3)
-
-    def _read_loop(self, proc: subprocess.Popen):
-        buf = ""
-        while proc.poll() is None and not self._stop.is_set():
-            chunk = proc.stdout.read(524288)
-            if not chunk:
-                return
-            buf += chunk.decode("latin-1")
-            latest_msg = None
-            while True:
-                buf = buf.lstrip()
-                if not buf or buf[0] != "{":
-                    idx = buf.find("{")
-                    buf = buf[idx:] if idx != -1 else ""
-                    break
-                try:
-                    msg, end = _decoder.raw_decode(buf)
-                except ValueError:
-                    break
-                buf = buf[end:]
-                latest_msg = msg
-            if latest_msg is not None:
-                frame = decode_frame(latest_msg)
-                if frame is not None:
-                    with self._lock:
-                        self._latest = frame
-                        self._seq += 1
+    def _on_image(self, msg):
+        w, h, raw = msg.width, msg.height, msg.data
+        if len(raw) == w * h * 3:
+            frame = cv2.cvtColor(np.frombuffer(raw, np.uint8).reshape((h, w, 3)), cv2.COLOR_RGB2BGR)
+        elif len(raw) == w * h * 4:
+            frame = cv2.cvtColor(np.frombuffer(raw, np.uint8).reshape((h, w, 4)), cv2.COLOR_RGBA2BGR)
+        else:
+            return
+        with self._lock:
+            self._latest = frame
+            self._seq += 1
 
 
 # ── RTSP publisher (one GStreamer pipeline per camera) ───────────────────────
@@ -249,17 +205,18 @@ class RtspPublisher:
         self._ffmpeg  = None
         self._running = False
 
-    def ensure_running(self):
-        """Start the pipeline if not already running."""
+    def ensure_running(self, frame_size: str):
+        """Start the pipeline if not already running (frame_size is WxH)."""
         if self._running:
             return
         rtsp_url = f"rtsp://{RTSP_HOST}:{RTSP_PORT}/{UAV_ID}/{self.cam_id}"
         self._ffmpeg = subprocess.Popen(
             [
                 "ffmpeg", "-y", "-f", "rawvideo",
-                "-pix_fmt", "bgr24", "-s", "416x416",
+                "-pix_fmt", "bgr24", "-s", frame_size,
                 "-r", str(SENSOR_FPS),
                 "-i", "pipe:0",
+                "-r", str(SENSOR_FPS),
                 "-c:v", "libx264", "-preset", "ultrafast", "-tune", "zerolatency",
                 "-b:v", f"{RTSP_BITRATE}k",
                 "-g", str(SENSOR_FPS * 2),
@@ -287,7 +244,12 @@ class RtspPublisher:
             self._ffmpeg = None
 
     def push_latest(self, seq_seen: int) -> int:
-        """Push the latest frame if newer than seq_seen. Returns new seq."""
+        """Push the latest frame if newer than seq_seen. Returns new seq.
+
+        Every rendered frame is pushed exactly once and stamped at SENSOR_FPS,
+        so the stream timeline follows simulation time even if Gazebo renders
+        slower than real time.
+        """
         frame, seq = self.reader.latest()
         if frame is None or seq == seq_seen:
             return seq_seen
@@ -385,7 +347,8 @@ def main():
                 if _armed["value"]:
                     for cam, pub in publishers.items():
                         if pub.reader.latest()[0] is not None:
-                            pub.ensure_running()
+                            fh, fw = pub.reader.latest()[0].shape[:2]
+                            pub.ensure_running(f"{fw}x{fh}")
                             seqs[cam] = pub.push_latest(seqs[cam])
                 else:
                     for pub in publishers.values():

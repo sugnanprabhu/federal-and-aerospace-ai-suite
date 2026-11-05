@@ -232,6 +232,117 @@ def _now_iso() -> str:
 rest_app = Flask("companion-bridge-rest")
 
 
+# ---------------------------------------------------------------------------
+# Offboard circle: a moving position setpoint (as in circle3.py) is far smoother
+# than discrete goto waypoints. Progress follows PX4's simulation clock so the
+# lap time is exact in sim time whatever the real-time factor.
+# ---------------------------------------------------------------------------
+
+_circle_task: "asyncio.Task | None" = None
+CIRCLE_LOOP_HZ = 20.0
+CIRCLE_RAMP_FRACTION = 0.12
+CIRCLE_CLIMB_SPEED = 2.0
+CIRCLE_MAX_TRACK_ERR_M = 3.0
+
+
+async def _first(stream):
+    async for item in stream:
+        return item
+
+
+async def _circle_loop(radius: float, altitude: float, lap_s: float, laps: float):
+    pv = await _first(uav.telemetry.position_velocity_ned())
+    n0, e0, d0 = pv.position.north_m, pv.position.east_m, pv.position.down_m
+    psi = (await _first(uav.telemetry.attitude_euler())).yaw_deg
+    psi_r = math.radians(psi)
+    fwd = (math.cos(psi_r), math.sin(psi_r))
+    right = (-math.sin(psi_r), math.cos(psi_r))
+    target_d = -altitude
+    clock = {"us": None}
+
+    async def track_clock():
+        async for imu in uav.telemetry.raw_imu():
+            clock["us"] = imu.timestamp_us
+
+    async def track_pos():
+        nonlocal pv
+        async for pv in uav.telemetry.position_velocity_ned():
+            pass
+
+    helpers = [asyncio.create_task(track_clock()), asyncio.create_task(track_pos())]
+    sim_dt_prev = [None]
+
+    def sim_dt() -> float:
+        if clock["us"] is None:
+            return 1.0 / CIRCLE_LOOP_HZ
+        prev, sim_dt_prev[0] = sim_dt_prev[0], clock["us"]
+        return 0.0 if prev is None else min(max((clock["us"] - prev) / 1e6, 0.0), 0.25)
+
+    def err_to(sp) -> float:
+        return math.dist((pv.position.north_m, pv.position.east_m, pv.position.down_m), sp[:3])
+
+    try:
+        await uav.offboard.set_position_ned(PositionNedYaw(n0, e0, d0, psi))
+        await uav.offboard.start()
+        _state["circle_phase"] = "climb"
+        d = d0
+        while abs(d - target_d) > 1e-3:
+            step = CIRCLE_CLIMB_SPEED * sim_dt()
+            d += max(min(target_d - d, step), -step)
+            sp = (n0, e0, d, psi)
+            await uav.offboard.set_position_ned(PositionNedYaw(*sp))
+            await asyncio.sleep(1.0 / CIRCLE_LOOP_HZ)
+        _state["circle_phase"] = "circle"
+        omega = 2.0 * math.pi / lap_s
+        theta = 0.0
+        end = 2.0 * math.pi * laps
+        while theta < end:
+            f = radius * math.sin(theta)
+            r = radius * (1.0 - math.cos(theta))
+            sp = (n0 + f * fwd[0] + r * right[0], e0 + f * fwd[1] + r * right[1],
+                  target_d, psi + math.degrees(theta))
+            await uav.offboard.set_position_ned(PositionNedYaw(*sp))
+            dt = sim_dt()
+            if err_to(sp) < CIRCLE_MAX_TRACK_ERR_M:
+                ramp = 1.0 if theta > 2.0 * math.pi * CIRCLE_RAMP_FRACTION else \
+                    max(0.05, theta / (2.0 * math.pi * CIRCLE_RAMP_FRACTION))
+                theta += omega * ramp * dt
+            _state["circle_theta"] = theta
+            await asyncio.sleep(1.0 / CIRCLE_LOOP_HZ)
+        _state["circle_phase"] = "done"
+    except asyncio.CancelledError:
+        raise
+    except Exception:
+        log.exception("circle loop failed")
+        _state["circle_phase"] = "failed"
+    finally:
+        for t in helpers:
+            t.cancel()
+        try:
+            await uav.offboard.stop()
+        except OffboardError:
+            pass
+
+
+async def _circle_start(radius: float, altitude: float, lap_s: float, laps: float):
+    global _circle_task
+    if _circle_task is not None and not _circle_task.done():
+        raise RuntimeError("Circle already running")
+    _state["circle_theta"] = 0.0
+    _state["circle_phase"] = "starting"
+    _circle_task = asyncio.get_running_loop().create_task(_circle_loop(radius, altitude, lap_s, laps))
+
+
+async def _circle_stop():
+    if _circle_task is not None and not _circle_task.done():
+        _circle_task.cancel()
+        try:
+            await _circle_task
+        except asyncio.CancelledError:
+            pass
+    _state["circle_phase"] = "stopped"
+
+
 async def _run_action(action: str, **kwargs):
     """Execute a uav action on the asyncio loop. Returns (ok, message)."""
     if action == "arm":
@@ -248,6 +359,11 @@ async def _run_action(action: str, **kwargs):
         alt = kwargs.get("altitude", 5.0)
         await uav.action.set_takeoff_altitude(alt)
         await uav.action.takeoff()
+    elif action == "circle_start":
+        await _circle_start(float(kwargs.get("radius", 25.0)), float(kwargs.get("altitude", 15.0)),
+                            float(kwargs.get("lap_s", 60.0)), float(kwargs.get("laps", 1000.0)))
+    elif action == "circle_stop":
+        await _circle_stop()
     elif action == "land":
         await uav.action.land()
     elif action == "return":
@@ -265,8 +381,9 @@ async def _run_action(action: str, **kwargs):
         lat = home_lat + north / 111_320.0
         lon = home_lon + east / (111_320.0 * math.cos(math.radians(home_lat)))
         abs_alt = home_alt + alt
-        # NaN yaw = keep current heading
-        await uav.action.goto_location(lat, lon, abs_alt, float('nan'))
+        # Optional yaw_deg (0 = north, clockwise); omitted = keep current heading
+        yaw = float(kwargs["yaw_deg"]) if kwargs.get("yaw_deg") is not None else float('nan')
+        await uav.action.goto_location(lat, lon, abs_alt, yaw)
     else:
         raise ValueError(f"Unknown action: {action}")
 

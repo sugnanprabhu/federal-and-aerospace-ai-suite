@@ -94,7 +94,13 @@ RUN gz fuel download -u "https://fuel.gazebosim.org/1.0/OpenRobotics/models/bayl
     && gz fuel download -u "https://fuel.gazebosim.org/1.0/OpenRobotics/models/Pickup" \
     && gz fuel download -u "https://fuel.gazebosim.org/1.0/OpenRobotics/models/Construction Cone" \
     && gz fuel download -u "https://fuel.gazebosim.org/1.0/OpenRobotics/models/Construction Barrel" \
-    && gz fuel download -u "https://fuel.gazebosim.org/1.0/OpenRobotics/models/Rescue Randy"
+    && gz fuel download -u "https://fuel.gazebosim.org/1.0/OpenRobotics/models/Rescue Randy" \
+    && gz fuel download -u "https://fuel.gazebosim.org/1.0/OpenRobotics/models/Ambulance" \
+    && gz fuel download -u "https://fuel.gazebosim.org/1.0/OpenRobotics/models/Bus" \
+    && gz fuel download -u "https://fuel.gazebosim.org/1.0/OpenRobotics/models/Walking person" \
+    && gz fuel download -u "https://fuel.gazebosim.org/1.0/OpenRobotics/models/Standing person" \
+    && gz fuel download -u "https://fuel.gazebosim.org/1.0/OpenRobotics/models/Casual female" \
+    && gz fuel download -u "https://fuel.gazebosim.org/1.0/OpenRobotics/models/Jersey Barrier"
 
 # PX4 source + submodules — uses pinned PX4 version
 ARG http_proxy
@@ -104,6 +110,14 @@ RUN git clone --depth 1 --branch "${PX4_VERSION}" \
       https://github.com/PX4/PX4-Autopilot.git /px4 \
     && cd /px4 \
     && git submodule update --init --recursive --depth 1 --jobs "$(nproc)"
+
+# Tree-free baylands terrain for the multicam world (trees trigger false
+# "person" detections). Generated from the Fuel copy downloaded above.
+COPY make_baylands_notrees.py /tmp/make_baylands_notrees.py
+RUN python3 /tmp/make_baylands_notrees.py \
+      "$(ls -d /root/.gz/fuel/fuel.gazebosim.org/openrobotics/models/baylands/* | sort -V | tail -n1)" \
+      /px4/Tools/simulation/gz/models/baylands_notrees \
+    && rm /tmp/make_baylands_notrees.py
 
 # Compile SITL binaries
 RUN cd /px4 && make px4_sitl_default

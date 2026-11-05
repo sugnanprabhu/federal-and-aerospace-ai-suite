@@ -1,0 +1,111 @@
+diff --git a/uav-mission-compute-sdk/Makefile b/uav-mission-compute-sdk/Makefile
+index c9b6298..fb83051 100644
+--- a/uav-mission-compute-sdk/Makefile
++++ b/uav-mission-compute-sdk/Makefile
+@@ -2,12 +2,17 @@
+ # SPDX-License-Identifier: Apache-2.0
+ 
+ SHELL := bash -eu -o pipefail
+-.PHONY: init up-sim-camera up-sim-camera-lean up-sim-camera-mono up-sim-camera-mono-lean up-usb-camera-lean up-realsense-camera up-realsense-camera-lean up-ethernet down down-ethernet build build-nc logs ps stats apps apps-down apps-logs clean clean-all deps clean-venv bench bench-client-sweep bench-bridge-sweep bench-all help
++.PHONY: init up-sim-camera up-sim-camera-lean up-sim-camera-offline up-sim-camera-mono up-sim-camera-mono-lean up-usb-camera-lean up-realsense-camera up-realsense-camera-lean up-ethernet down down-ethernet build build-nc logs ps stats apps apps-down apps-logs clean clean-all deps clean-venv bench bench-client-sweep bench-bridge-sweep bench-all help
+ 
+ # ── Deployment mode flag ───────────────────────────────────────────────────
+ # FC_IP must be set for ethernet mode (IP of FC machine running mavlink-router)
+ FC_IP ?=
+ 
++# The PX4 image is built from packages on repositories.intel.com, which is on the public internet. A corporate NO_PROXY
++# that lists intel.com would make apt and wget connect directly and hang for many minutes, so the build gets a no_proxy
++# without intel.com entries.
++export PX4_BUILD_NO_PROXY := $(shell printf '%s' "$$NO_PROXY" | tr ',' '\n' | grep -viE '^[.]?([a-z0-9-]+[.])*intel[.]com$$' | paste -sd, -)
++
+ COMPOSE_LOCAL   := docker compose -f docker-compose.yml
+ COMPOSE_ETH     := docker compose -f docker-compose.yml -f docker-compose.ethernet.yml
+ COMPOSE_APPS    := docker compose --env-file .env -f sample-apps/docker-compose.yml
+@@ -74,6 +79,8 @@ init:
+ # var on every run, so switching between multi-cam and mono-cam is clean
+ # regardless of what a previous `make up-sim-camera*` run left behind.
+ SIM_CAMERA_VARS_MULTI = PX4_START_SCRIPT=start_px4_multicam.sh PX4_MODEL_DIR=multi_cam PX4_WORLD_FILE=baylands_multicam.sdf GZ_WORLD=baylands_multicam CAMERA_IDS=nadir,forward,rear VISION_CAMERA_IDS=nadir,forward,rear COMPANION_BRIDGE_URL=http://px4-gazebo:8080
++# Same cameras in a self-contained world (no model downloads from fuel.gazebosim.org); for hosts without internet access
++SIM_CAMERA_VARS_OFFLINE = PX4_START_SCRIPT=start_px4_multicam.sh PX4_MODEL_DIR=multi_cam PX4_WORLD_FILE=detection_zone.sdf GZ_WORLD=detection_zone CAMERA_IDS=nadir,forward,rear VISION_CAMERA_IDS=nadir,forward,rear COMPANION_BRIDGE_URL=http://px4-gazebo:8080
+ SIM_CAMERA_VARS_MONO = PX4_START_SCRIPT=start_px4.sh PX4_MODEL_DIR=mono_cam PX4_WORLD_FILE=baylands_detection.sdf GZ_WORLD=baylands_detection CAMERA_IDS=nadir VISION_CAMERA_IDS=nadir COMPANION_BRIDGE_URL=http://px4-gazebo:8080
+ 
+ define set_env_vars
+@@ -95,6 +102,11 @@ up-sim-camera-lean:
+ 	$(call set_env_vars,$(SIM_CAMERA_VARS_MULTI))
+ 	PX4_NETWORK_SERVICE=px4 $(COMPOSE_LOCAL) --profile sim-camera up -d --build
+ 
++up-sim-camera-offline:
++	@# Help: Start the 3-camera sim in the self-contained detection_zone world (no Gazebo Fuel downloads; no observability stack)
++	$(call set_env_vars,$(SIM_CAMERA_VARS_OFFLINE))
++	PX4_NETWORK_SERVICE=px4 $(COMPOSE_LOCAL) --profile sim-camera up -d --build
++
+ up-sim-camera-mono:
+ 	@# Help: Start core infra with PX4 Gazebo sim cameras — 1 camera: nadir only (sim-camera profile)
+ 	$(call set_env_vars,$(SIM_CAMERA_VARS_MONO))
+diff --git a/uav-mission-compute-sdk/README.md b/uav-mission-compute-sdk/README.md
+index 8889695..b62048e 100644
+--- a/uav-mission-compute-sdk/README.md
++++ b/uav-mission-compute-sdk/README.md
+@@ -120,6 +120,7 @@ flowchart LR
+ make init                  # Create .env, detect GPU
+ make up-sim-camera         # Start sim stack (includes Grafana/InfluxDB)
+ make up-sim-camera-lean    # Start sim stack without observability (~300 MB RAM saved)
++make up-sim-camera-offline # Same, in a self-contained world (no downloads from fuel.gazebosim.org)
+ make up-usb-camera         # Start USB camera stack
+ make up-usb-camera-lean    # Start USB camera stack without observability
+ make up-realsense-camera   # Start Intel RealSense camera stack (IR + depth)
+diff --git a/uav-mission-compute-sdk/docs/user-guide/get-started.md b/uav-mission-compute-sdk/docs/user-guide/get-started.md
+index 75af7f3..1aa32ad 100644
+--- a/uav-mission-compute-sdk/docs/user-guide/get-started.md
++++ b/uav-mission-compute-sdk/docs/user-guide/get-started.md
+@@ -171,6 +171,16 @@ curl -X POST http://localhost:8080/action/arm
+ 
+ ## Troubleshooting
+ 
++**`make up-sim-camera` takes very long or never finishes**:
++- *The image build hangs at the Intel GPU repository step.* On a corporate network whose `NO_PROXY` lists `intel.com`,
++  `repositories.intel.com` was fetched directly (it is on the public internet) and hung for many minutes. The
++  `px4-sim` Dockerfile now takes `intel.com` out of `no_proxy` for that layer and gives up after about a minute; if it
++  still fails, check that `HTTPS_PROXY` reaches `https://repositories.intel.com/gpu/intel-graphics.key`
++  (`curl -I --proxy $HTTPS_PROXY ...`). The first build compiles PX4 from source (about 15 minutes); later builds use the cache.
++- *`px4-gazebo` keeps restarting with `Failed to download model` from `fuel.gazebosim.org`.* The default world downloads
++  its models from Gazebo Fuel, which is not reachable from every network (HTTP 502 through the proxy). Use
++  `make up-sim-camera-offline`, which runs the same cameras in the self-contained `detection_zone` world.
++
+ **USB camera not found** — verify your device path and update `.env`:
+ ```bash
+ v4l2-ctl --list-devices
+diff --git a/uav-mission-compute-sdk/infra/px4-sim/Dockerfile b/uav-mission-compute-sdk/infra/px4-sim/Dockerfile
+index 7f8f156..4a0e55e 100644
+--- a/uav-mission-compute-sdk/infra/px4-sim/Dockerfile
++++ b/uav-mission-compute-sdk/infra/px4-sim/Dockerfile
+@@ -33,8 +33,14 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+          echo "http_proxy=${http_proxy}"   >> /etc/wgetrc; \
+          echo "use_proxy=on"               >> /etc/wgetrc; \
+        fi \
+-    && wget -qO - https://repositories.intel.com/gpu/intel-graphics.key \
+-       | gpg --dearmor -o /usr/share/keyrings/intel-graphics.gpg \
++    # repositories.intel.com is on the public internet and is reached through the proxy. A corporate no_proxy that
++    # lists intel.com makes wget and apt connect directly, which hangs the build for many minutes (the Makefile passes
++    # a no_proxy without intel.com to the build, see PX4_BUILD_NO_PROXY). Here, as a second guard, take intel.com out
++    # of no_proxy for this layer and let the download fail within a minute or so instead of hanging.
++    && export no_proxy="$(printf '%s' "${no_proxy}" | tr ',' '\n' | grep -viE '^[.]?([a-z0-9-]+[.])*intel[.]com$' | paste -sd, -)" \
++    && export NO_PROXY="${no_proxy}" \
++    && wget --timeout=30 --tries=3 -qO /tmp/intel-graphics.key https://repositories.intel.com/gpu/intel-graphics.key \
++    && gpg --dearmor -o /usr/share/keyrings/intel-graphics.gpg /tmp/intel-graphics.key \
+     && echo "deb [arch=amd64 signed-by=/usr/share/keyrings/intel-graphics.gpg] \
+        https://repositories.intel.com/gpu/ubuntu noble unified" \
+        > /etc/apt/sources.list.d/intel-gpu.list \
+diff --git a/uav-mission-compute-sdk/infra/px4-sim/start_px4_multicam.sh b/uav-mission-compute-sdk/infra/px4-sim/start_px4_multicam.sh
+index 1a52c07..c6bccc4 100755
+--- a/uav-mission-compute-sdk/infra/px4-sim/start_px4_multicam.sh
++++ b/uav-mission-compute-sdk/infra/px4-sim/start_px4_multicam.sh
+@@ -18,7 +18,7 @@ echo "=== PX4 SITL + Gazebo Harmonic (Multi-Camera Perimeter Security) ==="
+ 
+ # Reuse the mono_cam_down airframe — multi_cam model.sdf is mounted over
+ # the mono_cam path at runtime via docker-compose volume mounts.
+-export PX4_GZ_WORLD=baylands_multicam
++export PX4_GZ_WORLD="${PX4_GZ_WORLD:-baylands_multicam}"
+ export HEADLESS=1
+ 
+ exec make px4_sitl gz_x500_mono_cam_down 2>&1 | grep --line-buffered -v "pxh>"

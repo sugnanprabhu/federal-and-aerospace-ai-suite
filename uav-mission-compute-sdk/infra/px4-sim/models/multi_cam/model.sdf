@@ -46,8 +46,8 @@ SPDX-License-Identifier: Apache-2.0
         <camera>
           <horizontal_fov>1.74</horizontal_fov>
           <image>
-            <width>416</width>
-            <height>416</height>
+            <width>1920</width>
+            <height>1080</height>
           </image>
           <clip>
             <near>0.1</near>
@@ -66,8 +66,8 @@ SPDX-License-Identifier: Apache-2.0
         <camera>
           <horizontal_fov>1.2</horizontal_fov>
           <image>
-            <width>416</width>
-            <height>416</height>
+            <width>1920</width>
+            <height>1080</height>
           </image>
           <clip>
             <near>0.1</near>
@@ -79,15 +79,15 @@ SPDX-License-Identifier: Apache-2.0
         <visualize>false</visualize>
       </sensor>
 
-      <!-- Rear camera sensor: 45 deg rear-down -->
+      <!-- Rear camera sensor: 45 deg rear-down, offset behind the rear rotors so the airframe is not in view -->
       <sensor name="imager_rear" type="camera">
         <gz_frame_id>camera_link</gz_frame_id>
-        <pose>-0.08 0 -0.05 3.14159 -0.7854 0</pose>
+        <pose>-0.75 0 -0.1 0 0.7854 0</pose>
         <camera>
           <horizontal_fov>1.2</horizontal_fov>
           <image>
-            <width>416</width>
-            <height>416</height>
+            <width>1920</width>
+            <height>1080</height>
           </image>
           <clip>
             <near>0.1</near>

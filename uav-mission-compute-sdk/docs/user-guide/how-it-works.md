@@ -155,7 +155,7 @@ sequenceDiagram
 
 ### PX4 + Gazebo (`px4-gazebo`)
 - Flight controller simulation + 3 cameras (nadir, forward 45°, rear 45°)
-- 416x416 RGB @20fps per camera
+- 1920x1080 RGB @30fps per camera
 - MAVLink on port 14540, REST API on port 8080
 
 ### Companion Bridge
@@ -276,9 +276,9 @@ mosquitto_sub -h localhost -p 1884 -t "uav/uav-1/telemetry/#" -v
 
 | Stream Path | Description | Resolution | FPS | Codec |
 |-------------|-------------|------------|-----|-------|
-| `/uav-1/nadir` | Downward-facing camera | 416x416 | 20 | H264 |
-| `/uav-1/forward` | Forward 45° camera | 416x416 | 20 | H264 |
-| `/uav-1/rear` | Rear 45° camera | 416x416 | 20 | H264 |
+| `/uav-1/nadir` | Downward-facing camera | 1920x1080 | 30 | H264 |
+| `/uav-1/forward` | Forward 45° camera | 1920x1080 | 30 | H264 |
+| `/uav-1/rear` | Rear 45° camera | 1920x1080 | 30 | H264 |
 | `/uav-1/nadir/processed` | Annotated nadir (with bboxes) | 416x416 | ~10 | H264 (openh264) |
 | `/uav-1/forward/processed` | Annotated forward (with bboxes) | 416x416 | ~10 | H264 (openh264) |
 | `/uav-1/rear/processed` | Annotated rear (with bboxes) | 416x416 | ~10 | H264 (openh264) |

@@ -34,14 +34,14 @@ SPDX-License-Identifier: Apache-2.0
       <sky>
         <clouds>true</clouds>
       </sky>
-      <shadows>1</shadows>
+      <shadows>0</shadows>
     </scene>
 
     <light name='sunUTC' type='directional'>
       <pose>0 0 500 0 -0 0</pose>
-      <cast_shadows>true</cast_shadows>
+      <cast_shadows>false</cast_shadows>
       <intensity>1</intensity>
-      <direction>0.001 0.625 -0.78</direction>
+      <direction>0 0 -1</direction>
       <diffuse>0.904 0.904 0.904 1</diffuse>
       <specular>0.271 0.271 0.271 1</specular>
       <attenuation>
@@ -52,11 +52,14 @@ SPDX-License-Identifier: Apache-2.0
       </attenuation>
     </light>
 
-    <!-- Baylands terrain mesh -->
+    <!-- Baylands terrain mesh without trees (generated in the image by make_baylands_notrees.py) -->
     <include>
-      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/baylands</uri>
+      <uri>model://baylands_notrees</uri>
       <name>park</name>
-      <pose>205 155 -1 0 0 0</pose>
+      <!-- Offset so the spawn point (world origin) sits on a flat, grass-only patch
+           of the terrain (no road/parking markings, no water, no holes) with the
+           ground just below z=0 so the vehicles and people stand on it -->
+      <pose>-65 55 -0.3 0 0 0</pose>
     </include>
 
     <include>
@@ -174,6 +177,1060 @@ SPDX-License-Identifier: Apache-2.0
       <static>true</static>
       <pose>4 -5 0 0 0 0</pose>
     </include>
+    <!-- Objects replacing the removed trees (detection targets) -->
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Bus</uri>
+      <name>bus_1</name>
+      <static>true</static>
+      <pose>-25 -15 0 0 0 0.4</pose>
+    </include>
+
+
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Walking person</uri>
+      <name>person_3</name>
+      <static>true</static>
+      <pose>-14 -2 0 0 0 0.8</pose>
+    </include>
+
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Standing person</uri>
+      <name>person_4</name>
+      <static>true</static>
+      <pose>6 14 0 0 0 -1.2</pose>
+    </include>
+
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Casual female</uri>
+      <name>person_5</name>
+      <static>true</static>
+      <pose>20 -12 0 0 0 2.5</pose>
+    </include>
+
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Walking person</uri>
+      <name>person_6</name>
+      <static>true</static>
+      <pose>-20 14 0 0 0 0</pose>
+    </include>
+
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Jersey Barrier</uri>
+      <name>barrier_1</name>
+      <static>true</static>
+      <pose>-6 -12 0 0 0 0</pose>
+    </include>
+
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Jersey Barrier</uri>
+      <name>barrier_2</name>
+      <static>true</static>
+      <pose>-3 -12 0 0 0 0</pose>
+    </include>
+
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Jersey Barrier</uri>
+      <name>barrier_3</name>
+      <static>true</static>
+      <pose>22 8 0 0 0 1.57</pose>
+    </include>
+
+    <!-- Fillers placed where the baylands trees used to stand -->
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Hatchback</uri>
+      <name>fill_0</name>
+      <static>true</static>
+      <pose>-35.9 56.7 0 0 0 -1.11</pose>
+    </include>
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/SUV</uri>
+      <name>fill_1</name>
+      <static>true</static>
+      <pose>36.4 87.0 0 0 0 -2.19</pose>
+    </include>
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Pickup</uri>
+      <name>fill_2</name>
+      <static>true</static>
+      <pose>-30.5 48.2 0 0 0 0.95</pose>
+    </include>
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Walking person</uri>
+      <name>fill_3</name>
+      <static>true</static>
+      <pose>-62.9 24.2 0 0 0 -2.69</pose>
+    </include>
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Standing person</uri>
+      <name>fill_4</name>
+      <static>true</static>
+      <pose>81.7 -14.9 0 0 0 0.23</pose>
+    </include>
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Casual female</uri>
+      <name>fill_5</name>
+      <static>true</static>
+      <pose>-74.5 32.9 0 0 0 -0.84</pose>
+    </include>
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Hatchback red</uri>
+      <name>fill_6</name>
+      <static>true</static>
+      <pose>-41.2 42.0 0 0 0 -2.78</pose>
+    </include>
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Construction Barrel</uri>
+      <name>fill_7</name>
+      <static>true</static>
+      <pose>-86.6 21.9 0 0 0 0.05</pose>
+    </include>
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Rescue Randy</uri>
+      <name>fill_8</name>
+      <static>true</static>
+      <pose>24.9 78.6 0 0 0 -2.90</pose>
+    </include>
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Jersey Barrier</uri>
+      <name>fill_9</name>
+      <static>true</static>
+      <pose>-75.6 14.9 0 0 0 -0.42</pose>
+    </include>
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Construction Cone</uri>
+      <name>fill_10</name>
+      <static>true</static>
+      <pose>-56.8 29.8 0 0 0 -2.70</pose>
+    </include>
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Hatchback</uri>
+      <name>fill_11</name>
+      <static>true</static>
+      <pose>65.3 -57.2 0 0 0 -2.57</pose>
+    </include>
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/SUV</uri>
+      <name>fill_12</name>
+      <static>true</static>
+      <pose>53.6 -54.1 0 0 0 -0.47</pose>
+    </include>
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Pickup</uri>
+      <name>fill_13</name>
+      <static>true</static>
+      <pose>93.1 8.9 0 0 0 2.05</pose>
+    </include>
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Walking person</uri>
+      <name>fill_14</name>
+      <static>true</static>
+      <pose>-92.0 12.8 0 0 0 -2.36</pose>
+    </include>
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Standing person</uri>
+      <name>fill_15</name>
+      <static>true</static>
+      <pose>92.6 -71.3 0 0 0 -1.74</pose>
+    </include>
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Casual female</uri>
+      <name>fill_16</name>
+      <static>true</static>
+      <pose>89.8 -81.1 0 0 0 0.80</pose>
+    </include>
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Hatchback red</uri>
+      <name>fill_17</name>
+      <static>true</static>
+      <pose>60.4 -78.2 0 0 0 2.81</pose>
+    </include>
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Construction Barrel</uri>
+      <name>fill_18</name>
+      <static>true</static>
+      <pose>74.5 -59.5 0 0 0 0.48</pose>
+    </include>
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Rescue Randy</uri>
+      <name>fill_19</name>
+      <static>true</static>
+      <pose>-15.6 90.1 0 0 0 -0.65</pose>
+    </include>
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Jersey Barrier</uri>
+      <name>fill_20</name>
+      <static>true</static>
+      <pose>39.3 -18.5 0 0 0 2.99</pose>
+    </include>
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Construction Cone</uri>
+      <name>fill_21</name>
+      <static>true</static>
+      <pose>78.5 -51.1 0 0 0 -2.85</pose>
+    </include>
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Hatchback</uri>
+      <name>fill_22</name>
+      <static>true</static>
+      <pose>63.5 -5.4 0 0 0 2.25</pose>
+    </include>
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/SUV</uri>
+      <name>fill_23</name>
+      <static>true</static>
+      <pose>57.1 -29.5 0 0 0 -1.32</pose>
+    </include>
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Pickup</uri>
+      <name>fill_24</name>
+      <static>true</static>
+      <pose>48.7 -21.4 0 0 0 -2.23</pose>
+    </include>
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Walking person</uri>
+      <name>fill_25</name>
+      <static>true</static>
+      <pose>81.1 -38.2 0 0 0 -2.40</pose>
+    </include>
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Standing person</uri>
+      <name>fill_26</name>
+      <static>true</static>
+      <pose>53.9 -66.6 0 0 0 -1.20</pose>
+    </include>
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Casual female</uri>
+      <name>fill_27</name>
+      <static>true</static>
+      <pose>89.4 -11.1 0 0 0 1.99</pose>
+    </include>
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Hatchback red</uri>
+      <name>fill_28</name>
+      <static>true</static>
+      <pose>53.5 -38.7 0 0 0 -2.01</pose>
+    </include>
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Construction Barrel</uri>
+      <name>fill_29</name>
+      <static>true</static>
+      <pose>68.6 -32.9 0 0 0 0.51</pose>
+    </include>
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Rescue Randy</uri>
+      <name>fill_30</name>
+      <static>true</static>
+      <pose>27.4 -15.5 0 0 0 0.87</pose>
+    </include>
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Jersey Barrier</uri>
+      <name>fill_31</name>
+      <static>true</static>
+      <pose>35.8 -39.5 0 0 0 -0.80</pose>
+    </include>
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Construction Cone</uri>
+      <name>fill_32</name>
+      <static>true</static>
+      <pose>87.4 54.5 0 0 0 0.30</pose>
+    </include>
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Hatchback</uri>
+      <name>fill_33</name>
+      <static>true</static>
+      <pose>-33.0 39.4 0 0 0 -2.75</pose>
+    </include>
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/SUV</uri>
+      <name>fill_34</name>
+      <static>true</static>
+      <pose>-42.0 33.8 0 0 0 -2.77</pose>
+    </include>
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Pickup</uri>
+      <name>fill_35</name>
+      <static>true</static>
+      <pose>42.7 -33.3 0 0 0 -1.85</pose>
+    </include>
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Walking person</uri>
+      <name>fill_36</name>
+      <static>true</static>
+      <pose>78.3 -75.2 0 0 0 1.13</pose>
+    </include>
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Standing person</uri>
+      <name>fill_37</name>
+      <static>true</static>
+      <pose>83.4 -66.0 0 0 0 -0.45</pose>
+    </include>
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Casual female</uri>
+      <name>fill_38</name>
+      <static>true</static>
+      <pose>68.6 -71.9 0 0 0 -1.17</pose>
+    </include>
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Hatchback red</uri>
+      <name>fill_39</name>
+      <static>true</static>
+      <pose>92.8 -54.4 0 0 0 0.54</pose>
+    </include>
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Construction Barrel</uri>
+      <name>fill_40</name>
+      <static>true</static>
+      <pose>63.3 -42.8 0 0 0 -0.29</pose>
+    </include>
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Rescue Randy</uri>
+      <name>fill_41</name>
+      <static>true</static>
+      <pose>-74.4 59.6 0 0 0 -1.26</pose>
+    </include>
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Jersey Barrier</uri>
+      <name>fill_42</name>
+      <static>true</static>
+      <pose>-11.7 -87.1 0 0 0 1.85</pose>
+    </include>
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Construction Cone</uri>
+      <name>fill_43</name>
+      <static>true</static>
+      <pose>-60.6 -42.2 0 0 0 1.25</pose>
+    </include>
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Hatchback</uri>
+      <name>fill_44</name>
+      <static>true</static>
+      <pose>6.3 -33.5 0 0 0 -1.61</pose>
+    </include>
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/SUV</uri>
+      <name>fill_45</name>
+      <static>true</static>
+      <pose>15.2 -51.5 0 0 0 0.47</pose>
+    </include>
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Pickup</uri>
+      <name>fill_46</name>
+      <static>true</static>
+      <pose>12.6 -74.8 0 0 0 0.16</pose>
+    </include>
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Walking person</uri>
+      <name>fill_47</name>
+      <static>true</static>
+      <pose>-36.2 -29.9 0 0 0 2.36</pose>
+    </include>
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Standing person</uri>
+      <name>fill_48</name>
+      <static>true</static>
+      <pose>23.6 87.3 0 0 0 1.44</pose>
+    </include>
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Casual female</uri>
+      <name>fill_49</name>
+      <static>true</static>
+      <pose>-83.3 77.9 0 0 0 -1.33</pose>
+    </include>
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Hatchback red</uri>
+      <name>fill_50</name>
+      <static>true</static>
+      <pose>-50.7 -62.2 0 0 0 3.02</pose>
+    </include>
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Construction Barrel</uri>
+      <name>fill_51</name>
+      <static>true</static>
+      <pose>-18.3 -45.9 0 0 0 -2.40</pose>
+    </include>
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Rescue Randy</uri>
+      <name>fill_52</name>
+      <static>true</static>
+      <pose>-41.8 -80.3 0 0 0 -0.51</pose>
+    </include>
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Jersey Barrier</uri>
+      <name>fill_53</name>
+      <static>true</static>
+      <pose>-90.4 51.5 0 0 0 1.61</pose>
+    </include>
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Construction Cone</uri>
+      <name>fill_54</name>
+      <static>true</static>
+      <pose>-17.4 -68.0 0 0 0 -2.19</pose>
+    </include>
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Hatchback</uri>
+      <name>fill_55</name>
+      <static>true</static>
+      <pose>-22.9 75.7 0 0 0 -0.07</pose>
+    </include>
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/SUV</uri>
+      <name>fill_56</name>
+      <static>true</static>
+      <pose>-9.5 -63.9 0 0 0 -2.89</pose>
+    </include>
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Pickup</uri>
+      <name>fill_57</name>
+      <static>true</static>
+      <pose>-26.3 -50.0 0 0 0 1.06</pose>
+    </include>
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Walking person</uri>
+      <name>fill_58</name>
+      <static>true</static>
+      <pose>-68.5 -46.1 0 0 0 1.66</pose>
+    </include>
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Standing person</uri>
+      <name>fill_59</name>
+      <static>true</static>
+      <pose>-74.9 81.8 0 0 0 0.46</pose>
+    </include>
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Casual female</uri>
+      <name>fill_60</name>
+      <static>true</static>
+      <pose>-9.9 -41.9 0 0 0 2.36</pose>
+    </include>
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Hatchback red</uri>
+      <name>fill_61</name>
+      <static>true</static>
+      <pose>-1.0 -59.9 0 0 0 -1.17</pose>
+    </include>
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Construction Barrel</uri>
+      <name>fill_62</name>
+      <static>true</static>
+      <pose>20.6 -70.8 0 0 0 1.23</pose>
+    </include>
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Rescue Randy</uri>
+      <name>fill_63</name>
+      <static>true</static>
+      <pose>-34.3 -54.0 0 0 0 0.59</pose>
+    </include>
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Jersey Barrier</uri>
+      <name>fill_64</name>
+      <static>true</static>
+      <pose>-49.8 -84.3 0 0 0 0.50</pose>
+    </include>
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Construction Cone</uri>
+      <name>fill_65</name>
+      <static>true</static>
+      <pose>-77.8 23.4 0 0 0 -0.28</pose>
+    </include>
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Hatchback</uri>
+      <name>fill_66</name>
+      <static>true</static>
+      <pose>-42.4 -57.9 0 0 0 2.13</pose>
+    </include>
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/SUV</uri>
+      <name>fill_67</name>
+      <static>true</static>
+      <pose>-3.5 -83.0 0 0 0 2.79</pose>
+    </include>
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Pickup</uri>
+      <name>fill_68</name>
+      <static>true</static>
+      <pose>-44.4 -33.8 0 0 0 -0.16</pose>
+    </include>
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Walking person</uri>
+      <name>fill_69</name>
+      <static>true</static>
+      <pose>-58.7 90.3 0 0 0 1.03</pose>
+    </include>
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Standing person</uri>
+      <name>fill_70</name>
+      <static>true</static>
+      <pose>29.8 -29.6 0 0 0 -2.76</pose>
+    </include>
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Casual female</uri>
+      <name>fill_71</name>
+      <static>true</static>
+      <pose>-58.7 -66.2 0 0 0 1.27</pose>
+    </include>
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Hatchback red</uri>
+      <name>fill_72</name>
+      <static>true</static>
+      <pose>62.0 47.4 0 0 0 0.92</pose>
+    </include>
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Construction Barrel</uri>
+      <name>fill_73</name>
+      <static>true</static>
+      <pose>-33.5 -76.0 0 0 0 3.10</pose>
+    </include>
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Rescue Randy</uri>
+      <name>fill_74</name>
+      <static>true</static>
+      <pose>-52.3 -38.1 0 0 0 2.02</pose>
+    </include>
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Jersey Barrier</uri>
+      <name>fill_75</name>
+      <static>true</static>
+      <pose>-28.2 -25.9 0 0 0 -1.35</pose>
+    </include>
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Construction Cone</uri>
+      <name>fill_76</name>
+      <static>true</static>
+      <pose>-66.9 86.2 0 0 0 -0.72</pose>
+    </include>
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Hatchback</uri>
+      <name>fill_77</name>
+      <static>true</static>
+      <pose>-2.1 -37.7 0 0 0 1.06</pose>
+    </include>
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/SUV</uri>
+      <name>fill_78</name>
+      <static>true</static>
+      <pose>6.8 -55.8 0 0 0 -3.00</pose>
+    </include>
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Pickup</uri>
+      <name>fill_79</name>
+      <static>true</static>
+      <pose>-91.2 73.9 0 0 0 -0.24</pose>
+    </include>
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Walking person</uri>
+      <name>fill_80</name>
+      <static>true</static>
+      <pose>-19.7 -91.0 0 0 0 -2.08</pose>
+    </include>
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Standing person</uri>
+      <name>fill_81</name>
+      <static>true</static>
+      <pose>-82.3 55.6 0 0 0 -2.40</pose>
+    </include>
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Casual female</uri>
+      <name>fill_82</name>
+      <static>true</static>
+      <pose>90.3 18.0 0 0 0 -2.77</pose>
+    </include>
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Hatchback red</uri>
+      <name>fill_83</name>
+      <static>true</static>
+      <pose>4.7 -78.8 0 0 0 1.68</pose>
+    </include>
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Construction Barrel</uri>
+      <name>fill_84</name>
+      <static>true</static>
+      <pose>72.8 46.1 0 0 0 -2.33</pose>
+    </include>
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Rescue Randy</uri>
+      <name>fill_85</name>
+      <static>true</static>
+      <pose>-25.1 93.0 0 0 0 -1.58</pose>
+    </include>
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Jersey Barrier</uri>
+      <name>fill_86</name>
+      <static>true</static>
+      <pose>91.9 31.3 0 0 0 -0.68</pose>
+    </include>
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Construction Cone</uri>
+      <name>fill_87</name>
+      <static>true</static>
+      <pose>-25.7 -72.0 0 0 0 2.33</pose>
+    </include>
+
+    <!-- Extra objects around the mission area -->
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Hatchback</uri>
+      <name>area_0</name>
+      <static>true</static>
+      <pose>35.4 26.4 0 0 0 -0.37</pose>
+    </include>
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/SUV</uri>
+      <name>area_1</name>
+      <static>true</static>
+      <pose>-7.7 27.9 0 0 0 2.12</pose>
+    </include>
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Pickup</uri>
+      <name>area_2</name>
+      <static>true</static>
+      <pose>37.3 10.4 0 0 0 -2.61</pose>
+    </include>
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Hatchback red</uri>
+      <name>area_3</name>
+      <static>true</static>
+      <pose>27.3 -39.6 0 0 0 1.57</pose>
+    </include>
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Walking person</uri>
+      <name>area_4</name>
+      <static>true</static>
+      <pose>0.2 -23.2 0 0 0 -2.95</pose>
+    </include>
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Standing person</uri>
+      <name>area_5</name>
+      <static>true</static>
+      <pose>20.2 30.8 0 0 0 0.64</pose>
+    </include>
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Casual female</uri>
+      <name>area_6</name>
+      <static>true</static>
+      <pose>25.0 14.6 0 0 0 -0.12</pose>
+    </include>
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Rescue Randy</uri>
+      <name>area_7</name>
+      <static>true</static>
+      <pose>21.6 -20.0 0 0 0 -1.69</pose>
+    </include>
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Construction Barrel</uri>
+      <name>area_8</name>
+      <static>true</static>
+      <pose>52.2 18.7 0 0 0 1.25</pose>
+    </include>
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Construction Cone</uri>
+      <name>area_9</name>
+      <static>true</static>
+      <pose>10.2 -24.3 0 0 0 -0.02</pose>
+    </include>
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Jersey Barrier</uri>
+      <name>area_10</name>
+      <static>true</static>
+      <pose>46.3 -9.0 0 0 0 0.72</pose>
+    </include>
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Bus</uri>
+      <name>area_11</name>
+      <static>true</static>
+      <pose>61.6 31.3 0 0 0 2.64</pose>
+    </include>
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/SUV</uri>
+      <name>area_15</name>
+      <static>true</static>
+      <pose>29.7 -4.7 0 0 0 1.12</pose>
+    </include>
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Pickup</uri>
+      <name>area_16</name>
+      <static>true</static>
+      <pose>0.3 20.9 0 0 0 -1.87</pose>
+    </include>
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Hatchback red</uri>
+      <name>area_17</name>
+      <static>true</static>
+      <pose>9.3 34.6 0 0 0 -2.07</pose>
+    </include>
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Walking person</uri>
+      <name>area_18</name>
+      <static>true</static>
+      <pose>-7.0 44.0 0 0 0 2.55</pose>
+    </include>
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Standing person</uri>
+      <name>area_19</name>
+      <static>true</static>
+      <pose>31.0 33.0 0 0 0 1.00</pose>
+    </include>
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Casual female</uri>
+      <name>area_20</name>
+      <static>true</static>
+      <pose>44.2 39.6 0 0 0 -0.36</pose>
+    </include>
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Rescue Randy</uri>
+      <name>area_21</name>
+      <static>true</static>
+      <pose>0.7 40.5 0 0 0 2.46</pose>
+    </include>
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Construction Barrel</uri>
+      <name>area_22</name>
+      <static>true</static>
+      <pose>55.6 9.3 0 0 0 -1.09</pose>
+    </include>
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Construction Cone</uri>
+      <name>area_23</name>
+      <static>true</static>
+      <pose>18.7 -35.7 0 0 0 1.04</pose>
+    </include>
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Jersey Barrier</uri>
+      <name>area_24</name>
+      <static>true</static>
+      <pose>63.4 14.1 0 0 0 -1.89</pose>
+    </include>
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Ambulance</uri>
+      <name>area_27</name>
+      <static>true</static>
+      <pose>44.0 18.3 0 0 0 2.60</pose>
+    </include>
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Hatchback</uri>
+      <name>area_28</name>
+      <static>true</static>
+      <pose>35.0 -10.6 0 0 0 2.39</pose>
+    </include>
+
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Hatchback</uri>
+      <name>ring_0</name>
+      <static>true</static>
+      <pose>-19.6 -2.7 0 0 0 0.03</pose>
+    </include>
+
+
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Pickup</uri>
+      <name>ring_2</name>
+      <static>true</static>
+      <pose>12.0 -41.8 0 0 0 2.36</pose>
+    </include>
+
+
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Walking person</uri>
+      <name>ring_4</name>
+      <static>true</static>
+      <pose>-12.2 29.6 0 0 0 -2.17</pose>
+    </include>
+
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Standing person</uri>
+      <name>ring_5</name>
+      <static>true</static>
+      <pose>39.8 24.8 0 0 0 2.69</pose>
+    </include>
+
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Casual female</uri>
+      <name>ring_6</name>
+      <static>true</static>
+      <pose>-5.1 -6.8 0 0 0 -0.99</pose>
+    </include>
+
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Rescue Randy</uri>
+      <name>ring_7</name>
+      <static>true</static>
+      <pose>23.7 20.7 0 0 0 -2.91</pose>
+    </include>
+
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Construction Barrel</uri>
+      <name>ring_8</name>
+      <static>true</static>
+      <pose>18.5 36.7 0 0 0 1.76</pose>
+    </include>
+
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Jersey Barrier</uri>
+      <name>ring_9</name>
+      <static>true</static>
+      <pose>-13.8 -16.0 0 0 0 1.44</pose>
+    </include>
+
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Construction Cone</uri>
+      <name>ring_10</name>
+      <static>true</static>
+      <pose>25.7 33.8 0 0 0 2.66</pose>
+    </include>
+
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Ambulance</uri>
+      <name>ring_11</name>
+      <static>true</static>
+      <pose>-16.8 20.3 0 0 0 -0.85</pose>
+    </include>
+
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Bus</uri>
+      <name>ring_12</name>
+      <static>true</static>
+      <pose>46.3 -1.4 0 0 0 -0.03</pose>
+    </include>
+
+
+
+
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Pickup</uri>
+      <name>ring_16</name>
+      <static>true</static>
+      <pose>15.3 18.3 0 0 0 2.36</pose>
+    </include>
+
+
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Walking person</uri>
+      <name>ring_18</name>
+      <static>true</static>
+      <pose>-18.2 3.5 0 0 0 2.12</pose>
+    </include>
+
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Standing person</uri>
+      <name>ring_19</name>
+      <static>true</static>
+      <pose>14.7 6.0 0 0 0 -1.32</pose>
+    </include>
+
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Casual female</uri>
+      <name>ring_20</name>
+      <static>true</static>
+      <pose>53.0 -4.0 0 0 0 1.54</pose>
+    </include>
+
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Rescue Randy</uri>
+      <name>ring_21</name>
+      <static>true</static>
+      <pose>-24.9 -6.5 0 0 0 1.44</pose>
+    </include>
+
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Construction Barrel</uri>
+      <name>ring_22</name>
+      <static>true</static>
+      <pose>25.1 -34.4 0 0 0 2.40</pose>
+    </include>
+
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Jersey Barrier</uri>
+      <name>ring_23</name>
+      <static>true</static>
+      <pose>-9.0 12.0 0 0 0 0.51</pose>
+    </include>
+
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Construction Cone</uri>
+      <name>ring_24</name>
+      <static>true</static>
+      <pose>2.1 33.9 0 0 0 0.22</pose>
+    </include>
+
+
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Bus</uri>
+      <name>ring_26</name>
+      <static>true</static>
+      <pose>16.5 -27.8 0 0 0 1.06</pose>
+    </include>
+
+
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Hatchback</uri>
+      <name>ring_28</name>
+      <static>true</static>
+      <pose>-23.9 8.2 0 0 0 -0.40</pose>
+    </include>
+
+
+
+
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Walking person</uri>
+      <name>ring_32</name>
+      <static>true</static>
+      <pose>18.9 24.7 0 0 0 1.90</pose>
+    </include>
+
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Standing person</uri>
+      <name>ring_33</name>
+      <static>true</static>
+      <pose>47.1 -16.3 0 0 0 2.41</pose>
+    </include>
+
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Casual female</uri>
+      <name>ring_34</name>
+      <static>true</static>
+      <pose>20.7 -4.2 0 0 0 1.55</pose>
+    </include>
+
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Rescue Randy</uri>
+      <name>ring_35</name>
+      <static>true</static>
+      <pose>-4.7 -18.6 0 0 0 -0.18</pose>
+    </include>
+
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Construction Barrel</uri>
+      <name>ring_36</name>
+      <static>true</static>
+      <pose>-3.1 29.3 0 0 0 -1.45</pose>
+    </include>
+
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Jersey Barrier</uri>
+      <name>ring_37</name>
+      <static>true</static>
+      <pose>9.8 16.6 0 0 0 0.80</pose>
+    </include>
+
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Construction Cone</uri>
+      <name>ring_38</name>
+      <static>true</static>
+      <pose>26.0 27.7 0 0 0 -1.45</pose>
+    </include>
+
+
+
+
+
+
+
+
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Walking person</uri>
+      <name>ring_46</name>
+      <static>true</static>
+      <pose>20.1 11.9 0 0 0 -1.04</pose>
+    </include>
+
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Standing person</uri>
+      <name>ring_47</name>
+      <static>true</static>
+      <pose>40.5 15.0 0 0 0 2.87</pose>
+    </include>
+
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Casual female</uri>
+      <name>ring_48</name>
+      <static>true</static>
+      <pose>-14.5 -21.7 0 0 0 -2.08</pose>
+    </include>
+
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Rescue Randy</uri>
+      <name>ring_49</name>
+      <static>true</static>
+      <pose>-7.4 33.9 0 0 0 1.08</pose>
+    </include>
+
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Construction Barrel</uri>
+      <name>ring_50</name>
+      <static>true</static>
+      <pose>3.3 -1.0 0 0 0 -2.01</pose>
+    </include>
+
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Jersey Barrier</uri>
+      <name>ring_51</name>
+      <static>true</static>
+      <pose>15.2 -19.3 0 0 0 2.99</pose>
+    </include>
+
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Construction Cone</uri>
+      <name>ring_52</name>
+      <static>true</static>
+      <pose>14.9 23.9 0 0 0 -0.89</pose>
+    </include>
+
+
+
+
+
+
+
+
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Walking person</uri>
+      <name>ring_60</name>
+      <static>true</static>
+      <pose>25.3 -27.8 0 0 0 -0.16</pose>
+    </include>
+
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Standing person</uri>
+      <name>ring_61</name>
+      <static>true</static>
+      <pose>5.7 -24.0 0 0 0 0.43</pose>
+    </include>
+
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Casual female</uri>
+      <name>ring_62</name>
+      <static>true</static>
+      <pose>35.4 35.5 0 0 0 0.45</pose>
+    </include>
+
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Rescue Randy</uri>
+      <name>ring_63</name>
+      <static>true</static>
+      <pose>51.3 4.1 0 0 0 -1.97</pose>
+    </include>
+
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Construction Barrel</uri>
+      <name>ring_64</name>
+      <static>true</static>
+      <pose>-6.2 5.6 0 0 0 -2.04</pose>
+    </include>
+
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Jersey Barrier</uri>
+      <name>ring_65</name>
+      <static>true</static>
+      <pose>30.8 -19.1 0 0 0 0.84</pose>
+    </include>
+
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Construction Cone</uri>
+      <name>ring_66</name>
+      <static>true</static>
+      <pose>13.5 34.6 0 0 0 0.81</pose>
+    </include>
+
+
 
   </world>
 </sdf>
