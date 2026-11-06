@@ -161,3 +161,15 @@ saved in `recordings/<name>/` (`front.mp4`, `bottom.mp4`, `rear.mp4`, `rear_unro
   detections (mostly rooftops read as airplane/keyboard/laptop). `uav-vision-analytics` configs use `gvadetect threshold=0.5`.
 - **Install as vision-analytics samples**: `cd ../uav-vision-analytics && ./scripts/convert_video.sh <mp4> -o resources/videos/uav_sample_{front,bottom,back}.avi -n 1750 -f`
   (rear.mp4 -> `back`), then `make start-rtsp` in a terminal (it needs a TTY and stays running).
+  `make pymav-up` can fail on the GPU group id; `env -u GPU_CARD_GID make pymav-up` works around it.
+- **Recording the annotated RTSP output** (boxes + telemetry overlay): streams are
+  `rtsp://<host-ip>:8555/uav-{front,bottom,back}-camera`. Capture with
+  `ffmpeg -rtsp_transport tcp -i <url> -t 60 -c copy out.mp4`, then re-encode with `-vf fps=30 -c:v libx264 -crf 18`
+  for a constant frame rate. Frame timing is only smooth if the simulator is stopped
+  (`docker stop px4-gazebo camera-bridge companion-bridge`): with Gazebo (about 3.5 cores) and the pipeline server
+  (about 5.6 cores) running together the capture averages 30 fps but arrives in bursts (many gaps over 50 ms), which looks
+  like jerk and frame drops. Check with `ffprobe -show_entries packet=pts_time`.
+- **Known flaw in v24**: a rooftop near the flight circle fills the frame for 3-5 s in every camera.
+  Move the flight path, remove that building from the world or raise the altitude to fix it.
+- **Arm retry**: `mission_record_circle.py` retries arming for up to 180 s (`arm_with_retry`) because PX4 rejects
+  arming until preflight checks pass on a slow simulator.
