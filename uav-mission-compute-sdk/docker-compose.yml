@@ -49,6 +49,7 @@ services:
     ipc: shareable
     environment:
       - HEADLESS=1
+      - PX4_GZ_WORLD=${GZ_WORLD:-baylands_multicam}
       - http_proxy=${HTTP_PROXY:-}
       - https_proxy=${HTTPS_PROXY:-}
       - no_proxy=${NO_PROXY:-localhost,127.0.0.0/8}
@@ -64,6 +65,7 @@ services:
     volumes:
       - ./infra/px4-sim/${PX4_START_SCRIPT:-start_px4_multicam.sh}:/root/start_px4.sh
       - ./infra/px4-sim/models/${PX4_MODEL_DIR:-multi_cam}/model.sdf:/px4/Tools/simulation/gz/models/mono_cam/model.sdf:ro
+      - ./infra/px4-sim/models/stab_cams/model.sdf:/px4/Tools/simulation/gz/models/stab_cams/model.sdf:ro
       - ./infra/px4-sim/worlds/${PX4_WORLD_FILE:-baylands_multicam.sdf}:/px4/Tools/simulation/gz/worlds/${PX4_WORLD_FILE:-baylands_multicam.sdf}:ro
     depends_on:
       mosquitto:
@@ -161,7 +163,7 @@ services:
       - MQTT_BROKER_PORT=1883
       - UAV_ID=${UAV_ID:-uav-1}
       - GZ_WORLD=${GZ_WORLD:-baylands_multicam}
-      - GZ_MODEL=x500_mono_cam_down_0
+      - GZ_MODEL=${CAM_GZ_MODEL:-x500_mono_cam_down_0}
       - CAMERA_IDS=${VISION_CAMERA_IDS:-nadir,forward,rear}
       - SENSOR_FPS=30
       - RTSP_BITRATE=${SIM_RTSP_BITRATE:-6000}

@@ -37,6 +37,19 @@ def post(action: str, **body):
     resp.raise_for_status()
 
 
+def arm_with_retry(timeout: float = 180.0) -> None:
+    """Arm, retrying while PX4 still reports failed preflight checks (it is slow right after a restart)."""
+    deadline = time.time() + timeout
+    while True:
+        try:
+            post("arm")
+            return
+        except requests.HTTPError:
+            if time.time() > deadline:
+                raise
+            time.sleep(5)
+
+
 class Position:
     """Latest GPS position from MQTT telemetry; lets waits follow the vehicle at any sim speed."""
 
@@ -65,13 +78,53 @@ class Position:
         return ((self.lat - lat0) * 111_320.0, (self.lon - lon0) * 111_320.0 * math.cos(math.radians(lat0)))
 
 
+STABILIZER = Path(__file__).resolve().parents[2] / "infra" / "px4-sim" / "gimbal_stabilizer.py"
+TRAFFIC_MOVER = Path(__file__).resolve().parents[2] / "infra" / "px4-sim" / "traffic_mover.py"
+TRAFFIC_DATA = Path(__file__).resolve().parents[2] / "infra" / "px4-sim" / "worlds" / "citysim_traffic.json"
+STAB_MODEL = "stab_cams_0"
 GO_FILE = "/tmp/record_go"
 STOP_FILE = "/tmp/record_stop"
 
 
-def start_recorder(duration: float, fps: int) -> subprocess.Popen:
+def start_stabilizer(yaw_tau: float, pos_tau: float) -> None:
+    """Run the level-camera gimbal in the camera-bridge container (stays up until the container restarts)."""
+    subprocess.run(["docker", "exec", CONTAINER, "pkill", "-f", "gimbal_stabilizer"], check=False)
+    code = STABILIZER.read_text(encoding="utf-8")
+    subprocess.run(["docker", "exec", "-i", CONTAINER, "sh", "-c", "cat > /tmp/gimbal_stabilizer.py"],
+                   input=code, text=True, check=True)
+    env = ["-e", f"GZ_WORLD={os.getenv('GZ_WORLD', 'citysim_multicam')}",
+           "-e", f"STAB_YAW_TAU={yaw_tau}", "-e", f"STAB_POS_TAU={pos_tau}"]
+    subprocess.run(["docker", "exec", "-d", *env, CONTAINER, "sh", "-c",
+                    "python3 /tmp/gimbal_stabilizer.py > /tmp/gimbal_stabilizer.log 2>&1"], check=True)
+    for _ in range(60):
+        done = subprocess.run(["docker", "exec", CONTAINER, "grep", "-q", "stabilising", "/tmp/gimbal_stabilizer.log"])
+        if done.returncode == 0:
+            return
+        time.sleep(2)
+    raise RuntimeError("gimbal stabilizer did not start")
+
+
+def start_traffic() -> None:
+    """Run traffic_mover.py in the camera-bridge container so the traffic_* cars drive along the roads."""
+    subprocess.run(["docker", "exec", CONTAINER, "pkill", "-f", "traffic_mover"], check=False)
+    for src, dst in ((TRAFFIC_MOVER, "/tmp/traffic_mover.py"), (TRAFFIC_DATA, "/tmp/traffic.json")):
+        subprocess.run(["docker", "exec", "-i", CONTAINER, "sh", "-c", f"cat > {dst}"],
+                       input=src.read_text(encoding="utf-8"), text=True, check=True)
+    env = ["-e", f"GZ_WORLD={os.getenv('GZ_WORLD', 'citysim_multicam')}"]
+    subprocess.run(["docker", "exec", "-d", *env, CONTAINER, "sh", "-c",
+                    "python3 /tmp/traffic_mover.py /tmp/traffic.json > /tmp/traffic_mover.log 2>&1"], check=True)
+    for _ in range(60):
+        done = subprocess.run(["docker", "exec", CONTAINER, "grep", "-q", "moving traffic", "/tmp/traffic_mover.log"])
+        if done.returncode == 0:
+            return
+        time.sleep(2)
+    raise RuntimeError("traffic mover did not start")
+
+
+def start_recorder(duration: float, fps: int, model: str | None = None) -> subprocess.Popen:
     """Run sync_recorder.py in the camera-bridge container and wait until frames flow."""
-    cmd = ["docker", "exec", "-i", CONTAINER, "python3", "-", "--out", "/tmp/recordings",
+    env = ["-e", f"GZ_MODEL={model}"] if model else []
+    cmd = ["docker", "exec", "-i", *env, CONTAINER, "python3", "-", "--out", "/tmp/recordings",
            "--duration", str(duration), "--fps", str(fps), "--go-file", GO_FILE,
            "--stop-file", STOP_FILE]
     proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True)
@@ -105,15 +158,24 @@ def main() -> int:
     ap.add_argument("--radius", type=float, default=35.0)
     ap.add_argument("--duration", type=float, default=60.0, help="video length in seconds (stream time)")
     ap.add_argument("--fps", type=int, default=30)
+    ap.add_argument("--stabilize", action="store_true",
+                    help="record from level (roll/pitch-free) gimbal cameras; needs PX4_MODEL_DIR=multi_cam_stab")
+    ap.add_argument("--traffic", action="store_true", help="drive the traffic_* cars along the roads (citysim world)")
+    ap.add_argument("--stab-yaw-tau", type=float, default=0.0, help="heading low-pass for the gimbal, sim seconds")
+    ap.add_argument("--stab-pos-tau", type=float, default=0.0, help="position low-pass for the gimbal, sim seconds")
     args = ap.parse_args()
 
     out_dir = Path(args.out)
 
+    if args.traffic:
+        start_traffic()
+    if args.stabilize:
+        start_stabilizer(args.stab_yaw_tau, args.stab_pos_tau)
     pos = Position()
     # One lap per video duration so the clip loops seamlessly.
     set_smooth_flight_params(2 * math.pi * args.radius / args.duration)
     print("Arming and taking off...")
-    post("arm")
+    arm_with_retry()
     time.sleep(3)
     post("takeoff", altitude=5.0)
     if not pos.wait(lambda p: p.rel_alt >= 4.0, timeout=300):
@@ -130,7 +192,7 @@ def main() -> int:
         # crosses its start pose again, so one 60 s lap makes a seamless loop.
         subprocess.run(["docker", "exec", CONTAINER, "rm", "-f", GO_FILE, STOP_FILE], check=False)
         # Upper bound only: the clip is cut when the drone has flown exactly one more lap.
-        recorder = start_recorder(args.duration * 1.5, args.fps)
+        recorder = start_recorder(args.duration * 1.5, args.fps, STAB_MODEL if args.stabilize else None)
         deadline = time.time() + 1500
         while time.time() < deadline:
             st = requests.get(f"{REST}/state", timeout=10).json()["state"]
