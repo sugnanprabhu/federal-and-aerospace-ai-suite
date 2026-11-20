@@ -539,7 +539,11 @@
       iframe.className = "device-video device-video-webrtc";
       iframe.allow = "autoplay; fullscreen";
       iframe.allowFullscreen = true;
-      iframe.src = `http://${mediamtxWebrtcHost}:${mediamtxWebrtcPort}/${path}/`;
+      // Behind the nginx overlay the page is HTTPS, so the WHEP viewer must come
+      // from the same origin (nginx /mediamtx/) to avoid mixed content.
+      iframe.src = location.protocol === "https:"
+        ? `${location.origin}/mediamtx/${path}/`
+        : `http://${mediamtxWebrtcHost}:${mediamtxWebrtcPort}/${path}/`;
       card.videoContainer.appendChild(iframe);
       setStatus(host, "connected");
       startRelayWatchdog(host, card);

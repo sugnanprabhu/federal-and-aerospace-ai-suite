@@ -1,0 +1,39 @@
+###############################################################################
+# SPDX-FileCopyrightText: (C) 2026 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+#
+# Overlay added by make up-vss: puts an nginx TLS reverse proxy in front of
+# the dashboard. Used on top of docker-compose.yml, docker-compose-mediamtx.yml
+# and docker-compose-vss.yml.
+#
+#   - Dashboard, /api/* and the mediamtx WHEP pages are served over HTTPS on
+#     VIZ_NGINX_HTTPS_PORT (default 8443).
+#   - viz-backend and the mediamtx WHEP port are no longer published on the LAN
+#     address; they stay reachable on loopback only (for local debugging).
+#   - The WebRTC ICE ports (8189) are unchanged: media does not go through nginx.
+###############################################################################
+
+services:
+
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: uav-gs-nginx
+    volumes:
+      - ./configs/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./configs/nginx/ssl:/etc/nginx/ssl:ro
+    ports:
+      - "${VIZ_HOST_IP:-127.0.0.1}:${VIZ_NGINX_HTTPS_PORT:-8443}:8443"
+    depends_on:
+      - viz-backend
+      - mediamtx
+    restart: on-failure:5
+
+  viz-backend:
+    ports: !override
+      - "127.0.0.1:${VIZ_PORT:-8080}:8080"
+
+  mediamtx:
+    ports: !override
+      - "${VIZ_HOST_IP:-127.0.0.1}:${MEDIAMTX_WEBRTC_ICE_UDP_PORT:-8189}:${MEDIAMTX_WEBRTC_ICE_UDP_PORT:-8189}/udp"
+      - "${VIZ_HOST_IP:-127.0.0.1}:${MEDIAMTX_WEBRTC_ICE_TCP_PORT:-8189}:${MEDIAMTX_WEBRTC_ICE_TCP_PORT:-8189}/tcp"
+      - "127.0.0.1:${MEDIAMTX_WEBRTC_PORT:-8889}:8889"
