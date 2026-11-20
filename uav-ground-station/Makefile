@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: (C) 2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-.PHONY: help init build _build_if_changed up up-vss _check_vss_env down down-vss clean-vss-index delete-vss-volumes logs
+.PHONY: help init build _build_if_changed _check_certs up up-vss _check_vss_env down down-vss clean-vss-index delete-vss-volumes logs
 
 ifneq (,$(wildcard .env))
   include .env
@@ -128,7 +128,7 @@ up: init _build_if_changed ## Start the ground-station viewer + mediamtx relay s
 down: ## Stop and remove the ground-station viewer + mediamtx relay sidecar
 	docker compose -f docker-compose.yml -f docker-compose-mediamtx.yml down -v
 
-VSS_COMPOSE = docker compose -f docker-compose.yml -f docker-compose-mediamtx.yml -f docker-compose-vss.yml
+VSS_COMPOSE = docker compose -f docker-compose.yml -f docker-compose-mediamtx.yml -f docker-compose-vss.yml -f docker-compose-nginx.yml
 
 VSS_REQUIRED_VARS = VSS_MINIO_USER VSS_MINIO_PASSWORD VSS_POSTGRES_USER VSS_POSTGRES_PASSWORD VSS_EMBEDDING_MODEL DATAPREP_DETECTION_MODEL
 
@@ -184,11 +184,11 @@ _set_vss_device:
 		echo "✅ VSS_INGEST_EMBEDDING_DEVICE / VSS_DETECTION_DEVICE / VSS_QUERY_EMBEDDING_DEVICE set to $$dev in .env"; \
 	fi
 
-up-vss: init _set_vss_device _check_vss_env _build_if_changed ## Relay mode + VSS search containers (enables Live Natural Language Search). DEVICE=CPU|GPU|NPU|all to pick the inference device
+up-vss: init _set_vss_device _check_vss_env _check_certs _build_if_changed ## Relay mode + VSS search containers behind an nginx HTTPS proxy (enables Live Natural Language Search). DEVICE=CPU|GPU|NPU|all to pick the inference device
 	@$(RESOLVE_PORTS) VSS_MANAGER_PORT:3001
 	@set -a; . ./.env; set +a; \
 	$(VSS_COMPOSE) up -d --no-build && \
-	echo "" && echo "✅ UAV ground station is up. Open the dashboard at: http://$$VIZ_HOST_IP:$${VIZ_PORT:-8080}"
+	echo "" && echo "✅ UAV ground station is up. Open the dashboard at: https://$$VIZ_HOST_IP:$${VIZ_NGINX_HTTPS_PORT:-8443}"
 
 down-vss: ## Stop the relay + VSS stack, keeping indexed footage/embeddings
 	$(VSS_COMPOSE) down
@@ -213,3 +213,20 @@ delete-vss-volumes: ## DELETE ALL VSS volumes incl. downloaded models (asks firs
 
 logs: ## Tail logs from all running containers
 	docker compose -f docker-compose.yml -f docker-compose-mediamtx.yml logs -f
+
+SSL_DIR = configs/nginx/ssl
+
+_check_certs: ## Generate a self-signed TLS certificate for the nginx overlay if missing
+	@mkdir -p $(SSL_DIR); \
+	if [ ! -f "$(SSL_DIR)/server.crt" ] || [ ! -f "$(SSL_DIR)/server.key" ]; then \
+		echo "Generate self-signed certificate..."; \
+		. ./.env; \
+		SAN="DNS:localhost,IP:127.0.0.1"; \
+		if [ -n "$$VIZ_PUBLIC_HOST" ] && [ "$$VIZ_PUBLIC_HOST" != "127.0.0.1" ]; then SAN="$$SAN,IP:$$VIZ_PUBLIC_HOST"; fi; \
+		openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+		  -keyout $(SSL_DIR)/server.key -out $(SSL_DIR)/server.crt \
+		  -subj "/C=US/ST=CA/L=San Francisco/O=Intel/OU=Edge AI/CN=localhost" \
+		  -addext "subjectAltName=$$SAN"; \
+		chmod 600 $(SSL_DIR)/server.key; chmod 644 $(SSL_DIR)/server.crt; \
+		docker restart uav-gs-nginx >/dev/null 2>&1 || true; \
+	fi

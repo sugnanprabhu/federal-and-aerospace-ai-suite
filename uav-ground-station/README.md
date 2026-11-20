@@ -103,6 +103,8 @@ uav-ground-station/
 ├── docker-compose-mediamtx.yml  # mediamtx sidecar for H.264 Relay video (always used, see `make up`)
 ├── configs/mediamtx.yml  # mediamtx settings (WebRTC only, 60 s on-demand timeouts)
 ├── docker-compose-vss.yml  # optional VSS search containers (make up-vss)
+├── docker-compose-nginx.yml  # nginx HTTPS reverse proxy, added by make up-vss
+├── configs/nginx/nginx.conf  # nginx proxy config (TLS certs are generated into configs/nginx/ssl/)
 ├── .env.example         # Copy to .env; all vars have loopback-safe defaults
 ├── docs/user-guide/get-started.md   # Full deployment walkthrough (both sides, VSS, multi-UAV, Flight Summary)
 ├── docs/user-guide/configuration.md # Every .env variable and the backend route reference
@@ -119,6 +121,10 @@ uav-ground-station/
     ├── Dockerfile
     └── static/           # index.html, css/, js/ (app.js, search.js, summary.js, arch.js), img/
 ```
+
+### HTTPS with nginx (`make up-vss`)
+
+`make up-vss` also starts an nginx reverse proxy (`docker-compose-nginx.yml`) that terminates TLS and serves the dashboard, `/api/*` and the video viewer pages from one origin at `https://<VIZ_HOST_IP>:8443` (change with `VIZ_NGINX_HTTPS_PORT` in `.env`). A self-signed certificate is generated into `configs/nginx/ssl/` on first use (replace `server.crt`/`server.key` with your own for a trusted one). `viz-backend` and the mediamtx WHEP port are published on loopback only; the WebRTC media ports (8189) are unchanged. `make up` (without search) stays plain HTTP on `VIZ_PORT`.
 
 Container names use the prefix `uav-gs-` (ground station): `uav-gs-backend`, `uav-gs-mediamtx` and `uav-gs-metrics-manager`. The compose service names (`viz-backend`, `mediamtx`, `gs-metrics-manager`) are unchanged.
 
