@@ -18,8 +18,20 @@ services:
     image: px4io/px4-sitl:v1.18.0-beta1-660-g61907962c9
     hostname: px4-sitl
     container_name: uav-va-px4
+    # PX4 simulator is chosen when the container starts (px4-select-sim.sh), default "auto":
+    # if AirSim (Unreal) answers on its RPC port at PX4_SIM_HOST_ADDR, PX4 runs the Iris airframe
+    # (none_iris) and connects to AirSim over TCP 4560; otherwise it runs the built-in SIH physics
+    # (sihsim_quadx) so the stack works standalone. The choice is made once, so restart this
+    # container after (re)starting the game. Force a mode with PX4_SIM_MODEL in .env.
+    entrypoint: ["bash", "/opt/px4/bin/px4-select-sim.sh"]
+    environment:
+      - PX4_SIM_MODEL=${PX4_SIM_MODEL:-auto}
+      - PX4_SIM_HOST_ADDR=${PX4_SIM_HOST_ADDR:-host.docker.internal}
+      - AIRSIM_API_PORT=${AIRSIM_API_PORT:-41451}
     volumes:
+      - ./px4-select-sim.sh:/opt/px4/bin/px4-select-sim.sh:ro
       - ./10040_sihsim_quadx.post:/opt/px4/etc/init.d-posix/airframes/10040_sihsim_quadx.post
+      - ./10016_none_iris.post:/opt/px4/etc/init.d-posix/airframes/10016_none_iris.post
     stdin_open: true
     tty: true
     networks:
