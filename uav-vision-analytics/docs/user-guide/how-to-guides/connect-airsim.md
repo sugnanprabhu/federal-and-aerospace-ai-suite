@@ -89,6 +89,12 @@ earlier can hold a dead socket and the vehicle will only hover.
 The same link works in both simulator modes. On WSL2 use the WSL address as `HOST_IP`; `127.0.0.1` on
 Windows does not reach UDP ports inside WSL.
 
+> [!NOTE]
+> Only one `mavlink-router` can own UDP `14551` on a host. Do not run this stack together with another
+> PX4/router stack that publishes the same port (for example a host-network router); stop one first, or
+> change `MAVLINK_UDP_PORT` in `.env` and use that port in QGroundControl. Offboard scripts use UDP `14540`,
+> so stop any leftover `mavsdk_server` before starting a new mission.
+
 ## Troubleshooting
 
 | Symptom | Cause and fix |
