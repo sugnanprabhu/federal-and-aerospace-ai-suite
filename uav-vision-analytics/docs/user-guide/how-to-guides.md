@@ -23,6 +23,8 @@ cameras, models, pipelines, overlay, search tuning — see
   enablement end-to-end, including common failure modes
 - [Test Against a Simulated, Continuously-Armed Mission](./how-to-guides/simulate-continuous-mission.md) —
   Keep PX4 SITL armed during interactive pipeline testing
+- [Connect PX4 to AirSim (Unreal Engine)](./how-to-guides/connect-airsim.md) —
+  Fly an AirSim drone instead of the built-in SIH physics; the simulator is chosen automatically at start
 - [View and Interpret Detection Logs (JSONL)](./how-to-guides/view-detection-logs.md) —
   Tail, filter, and correlate the per-pipeline detection metadata
 
@@ -43,6 +45,7 @@ Search Live Video with VSS <./how-to-guides/vss-live-search.md>
 Switch Deployment Modes <./how-to-guides/switch-deployment-mode.md>
 Enable NPU Inference <./how-to-guides/enable-npu-inference.md>
 Simulate a Continuous Mission <./how-to-guides/simulate-continuous-mission.md>
+Connect PX4 to AirSim <./how-to-guides/connect-airsim.md>
 View Detection Logs <./how-to-guides/view-detection-logs.md>
 Makefile Reference <./how-to-guides/makefile.md>
 Troubleshooting <./how-to-guides/troubleshooting.md>

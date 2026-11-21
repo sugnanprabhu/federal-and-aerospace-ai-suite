@@ -14,6 +14,9 @@ The application is built on Intel DL Streamer Pipeline Server and supports two d
 
 ```text
 docker-compose-pymavlink.yml  Standalone mode: PX4 SITL, mavlink-router, broker, DL Streamer Pipeline Server, metrics-manager, nginx.
+px4-select-sim.sh             PX4 container entrypoint: connects PX4 to AirSim (Unreal) when it is running, otherwise uses built-in SIH physics.
+10040_sihsim_quadx.post       PX4 airframe hook that routes MAVLink to mavlink-router (SIH mode).
+10016_none_iris.post          The same hook for the AirSim (none_iris) mode.
 docker-compose-uavsdk.yml     UAV Mission Compute SDK mode: DL Streamer Pipeline Server + nginx (connects to an external SDK stack).
 .env.example                  Template for .env — HOST_IP, GPU/NPU/camera device paths, and image tags.
 Makefile                      Operational targets (init, model, vlm-model, pymav-*, uavsdk-*, start-rtsp, check-cameras, cameras-status).
@@ -39,7 +42,7 @@ Container names use the prefix `uav-va-` (vision analytics), for example `uav-va
 | Service | Image | Role |
 | ------- | ----- | ---- |
 | `broker` | `eclipse-mosquitto:2.0.22` | MQTT broker for telemetry and pipeline events |
-| `px4` | `px4io/px4-sitl:v1.18.0-beta1-660-g61907962c9` | PX4 SITL flight controller simulation |
+| `px4` | `px4io/px4-sitl:v1.18.0-beta1-660-g61907962c9` | PX4 SITL flight controller simulation; uses built-in SIH physics, or connects to AirSim (Unreal Engine) when it is running — see [Connect PX4 to AirSim](docs/user-guide/how-to-guides/connect-airsim.md) |
 | `mavlink-router` | Built from `uav-mission-compute-sdk/infra/px4-sim/mavlink-router` | Routes MAVLink telemetry between PX4 and the pipeline server; publishes UDP `14551` for a remote QGroundControl |
 | `dlstreamer-pipeline-server` | `intel/dlstreamer-pipeline-server:2026.3.0-ubuntu24-rc1` (+ `pymavlink`) | Core inference engine — YOLO11s detection and telemetry overlay |
 | `metrics-manager` | `intel/metrics-manager:2026.3.0-rc1` | Host platform (CPU/GPU) metrics |

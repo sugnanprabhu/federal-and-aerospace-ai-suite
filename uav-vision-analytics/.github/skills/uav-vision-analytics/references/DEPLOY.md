@@ -33,8 +33,15 @@ causing the pipeline manager to block forever on `Waiting for heartbeat`.
 
 ```
 {{STACK_DIR}}/10040_sihsim_quadx.post:
+{{STACK_DIR}}/10016_none_iris.post:      # identical content; used when PX4 connects to AirSim
 mavlink start -u 14541 -t $(getent hosts mavlink-router | awk '{print $1}')
 ```
+
+`px4-select-sim.sh` (the container entrypoint) picks the simulator at start: with `PX4_SIM_MODEL=auto`
+it runs `none_iris` (PX4 connects to AirSim over TCP 4560) if AirSim's RPC port (`41451`) answers at
+`PX4_SIM_HOST_ADDR`, otherwise `sihsim_quadx`. It must probe the RPC port, never `4560` (AirSim accepts a
+single connection there). `PX4_SIM_HOST_ADDR` must be AirSim's `LocalHostIp`. See
+`docs/user-guide/how-to-guides/connect-airsim.md`.
 
 Docker Compose fragment:
 ```yaml
@@ -42,8 +49,15 @@ Docker Compose fragment:
     image: px4io/px4-sitl:v1.18.0-beta1-660-g61907962c9
     hostname: px4-sitl
     container_name: uav-va-px4
+    entrypoint: ["bash", "/opt/px4/bin/px4-select-sim.sh"]
+    environment:
+      - PX4_SIM_MODEL=${PX4_SIM_MODEL:-auto}
+      - PX4_SIM_HOST_ADDR=${PX4_SIM_HOST_ADDR:-host.docker.internal}
+      - AIRSIM_API_PORT=${AIRSIM_API_PORT:-41451}
     volumes:
+      - ./px4-select-sim.sh:/opt/px4/bin/px4-select-sim.sh:ro
       - ./10040_sihsim_quadx.post:/opt/px4/etc/init.d-posix/airframes/10040_sihsim_quadx.post
+      - ./10016_none_iris.post:/opt/px4/etc/init.d-posix/airframes/10016_none_iris.post
     stdin_open: true
     tty: true
     networks:

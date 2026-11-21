@@ -207,8 +207,9 @@ entirely to this skill's `configs/cameras-*.yaml` (see `references/CAMERAS.md`).
   passthrough for RTSP on `8555`).
 - For pymavlink mode (details in `references/DEPLOY.md`): the `mavlink-router` build `context`
   MUST be `./mavlink-router` inside `{{STACK_DIR}}` (never a sibling repo), and the `px4`
-  service MUST mount `10040_sihsim_quadx.post` — without it PX4 never routes MAVLink and the
-  pipeline manager blocks forever waiting for a heartbeat.
+  service MUST mount `10040_sihsim_quadx.post` and `10016_none_iris.post` and start through
+  `px4-select-sim.sh` (AirSim when reachable, else SIH) — without the post files PX4 never routes
+  MAVLink and the pipeline manager blocks forever waiting for a heartbeat.
 - Never put active proxy vars in `.env.example` (an empty `http_proxy=` overrides the system
   proxy and breaks `make model` / `make vlm-model`); use commented examples: `# http_proxy=`.
 - VSS live search is a `uav-ground-station` feature, not built here — for "search my drone
@@ -220,7 +221,9 @@ entirely to this skill's `configs/cameras-*.yaml` (see `references/CAMERAS.md`).
 ```
 {{STACK_DIR}}/
 ├── docker-compose-pymavlink.yml     # or docker-compose-uavsdk.yml
-├── 10040_sihsim_quadx.post          # PX4 airframe MAVLink routing (pymavlink only)
+├── 10040_sihsim_quadx.post          # PX4 airframe MAVLink routing, SIH mode (pymavlink only)
+├── 10016_none_iris.post             # same routing for the AirSim (none_iris) mode (pymavlink only)
+├── px4-select-sim.sh                # px4 entrypoint: AirSim if reachable, else SIH (pymavlink only)
 ├── .env.example                     # template; `make init` creates the local env file from it
 ├── Makefile                         # init, model, vlm-model, stack up/down, pipeline start/stop
 ├── configs/

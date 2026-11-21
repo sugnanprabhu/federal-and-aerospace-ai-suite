@@ -46,7 +46,7 @@ sequenceDiagram
 | --- | --- | --- | --- |
 | `dlstreamer-pipeline-server` | `intel/dlstreamer-pipeline-server` + Pymavlink | `8081`, `8555` | AI inference, RTSP output |
 | `broker` | `eclipse-mosquitto` | `1883` (published through `nginx`) | MQTT broker for the scene captions |
-| `px4` | `px4io/px4-sitl` | `14550` | Flight controller simulator |
+| `px4` | `px4io/px4-sitl` | `14550` | Flight controller simulator (built-in SIH physics, or AirSim when running — see [Connect PX4 to AirSim](../how-to-guides/connect-airsim.md)) |
 | `mavlink-router` | custom build | `14551` (UDP, published to `HOST_IP`) | MAVLink UDP routing (:14550 → :14541); remote QGroundControl connects to :14551 |
 | `metrics-manager` | `intel/metrics-manager` | `9090` | CPU/GPU/NPU/power metrics |
 | `nginx` | `nginx:1.27-alpine` | `80` (redirects to 443), `443` (HTTPS, self-signed cert), `8555` (RTSP passthrough) — published to `HOST_IP` | Reverse proxy / TLS termination — publishes the web, RTSP, and MQTT ports to the host |
